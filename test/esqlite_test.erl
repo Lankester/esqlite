@@ -388,5 +388,11 @@ garbage_collect_test() ->
 
     ok.
 
-
-
+fts5_trigram_test() ->
+    {ok, Db} = esqlite3:open(":memory:"),
+    ok = esqlite3:exec("create virtual table tri using fts5(a, tokenize=\"trigram\");", Db),
+    ok = esqlite3:exec(["insert into tri values('abcdefghij KLMNOPQRST uvwxyz');"], Db),
+    [{<<"abcdefghij KLMNOPQRST uvwxyz">>}] = esqlite3:q("select * from tri('cdefg');", Db),
+    [{<<"abcdefghij KLMNOPQRST uvwxyz">>}] = esqlite3:q("select * from tri('cdefg AND pqr');", Db),
+    [{<<"abcdefghij KLMNOPQRST uvwxyz">>}] = esqlite3:q("select * from tri('\"hij klm\" NOT stuv');", Db),
+    ok.
