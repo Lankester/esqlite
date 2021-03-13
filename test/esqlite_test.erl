@@ -403,3 +403,28 @@ json_test() ->
     ok = esqlite3:exec("insert into user values('test', json_array('555-555-555'));", Db),
     [{<<"test">>}] = esqlite3:q("select user.name from user, json_each(user.phone) where json_each.value like '555-%';", Db),
     ok.
+
+returning_test() ->
+  {ok, Db} = esqlite3:open(":memory:"),
+  ok = esqlite3:exec("create table users (id integer primary key, first_name text, last_name text);", Db),
+  [{1}] = esqlite3:q("insert into users (first_name, last_name) values ('Jane', 'Doe') returning id;", Db),
+  ok.
+
+material_cte_test() ->
+  {ok, Db} = esqlite3:open(":memory:"),
+  ok = esqlite3:exec("create table city(city text, foundation_year integer);", Db),
+  ok = esqlite3:exec("insert into city values('Boston', 1630);", Db),
+  ok = esqlite3:exec("insert into city values('Medford', 1630);", Db),
+  ok = esqlite3:exec("insert into city values('Portsmouth', 1630);", Db),
+  ok = esqlite3:exec("insert into city values('Montpelier', 1781);", Db),
+  ok = esqlite3:exec("insert into city values('Los Angeles', 1781);", Db),
+  ok = esqlite3:exec("insert into city values('San Francisco', 1776);", Db),
+  ok = esqlite3:exec("insert into city values('Louisville', 1778);", Db),
+  ok = esqlite3:exec("insert into city values('West Point', 1778);", Db),
+  [{<<"18 century">>,5},{<<"17 century">>,3}] = esqlite3:q("with history as materialized (select city, (foundation_year/100)+1 as century from city) select century || ' century' as dates, count(*) as city_count from history group by century order by century desc;", Db),
+  ok.
+
+maths_test() ->
+  {ok, Db} = esqlite3:open(":memory:"),
+  [{3.141592653589793}] = esqlite3:q("select pi();", Db),
+  [{15.0}] = esqlite3:q("select sqrt(225);", Db).
